@@ -13,22 +13,21 @@ defmodule Sockjs.Util do
     end
 
 	def encode_frame({:open, nil}) do
-    	<<"o">>
+        "o"
     end
 
 	def encode_frame({:close, {code, reason}}) do
-    	[<<"c">>,
-     		Json.encode([code, :erlang.list_to_binary(reason)])]
+    	["c", Json.encode([code, :erlang.list_to_binary(reason)])]
     end
 
 	def encode_frame({:data, l}) do
-    	[<<"a">>, 
+    	["a", 
      		#Json.encode([:erlang.iolist_to_binary(d) || d <- l])]
      		Json.encode(Enum.map(l, fn d -> :erlang.iolist_to_binary(d) end))]
     end
 
 	def encode_frame({:heartbeat, nil}) do
-    	<<"h">>
+    	"h"
     end
 
 	def url_escape(str, chars) do

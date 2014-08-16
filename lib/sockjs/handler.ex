@@ -1,6 +1,9 @@
 defmodule Sockjs.Handler do 
 
 	alias Sockjs.Service
+  alias Sockjs.Http
+  alias Sockjs.Filters
+  alias Sockjs.Action
 
 	@sockjs_url "https://d1fxtkz8shb9d2.cloudfront.net/sockjs-0.3.min.js"
 
@@ -20,11 +23,14 @@ defmodule Sockjs.Handler do
 
 
 	def is_valid_ws(service, req) do
+      IO.puts "validating ws request.."
     	case get_action(service, req) do
         	{{:match, ws}, req1} when ws !== :websocket or
                                  ws !== :rawwebsocket ->
+              IO.puts "calling valid_ws_request..."
             	valid_ws_request(service, req1)
         	{_else, req1} ->
+              IO.puts "invalid ws request"
             	{false, req1, {}}
     	end
     end
@@ -36,12 +42,13 @@ defmodule Sockjs.Handler do
     end
 
     defp valid_ws_upgrade(req) do
-    	case Http.header(:'upgrade', req) do
+    	case Http.header("upgrade", req) do
         	{:undefined, req2} ->
             	{false, req2}
         	{v, req2} ->
             	case :string.to_lower(v) do
-                	"websocket" ->
+                	'websocket' ->
+                      IO.puts "zmrdiiiiii"
                     	{true, req2}
                 	_else ->
                     	{false, req2}
@@ -54,14 +61,16 @@ defmodule Sockjs.Handler do
         	{:undefined, req2} ->
             	{false, req2}
         	{v, req2} ->
-        		vs = Enum.map(:string.tokens(:string.to_lower(v), ","), fn t -> :string.strip(t) end)
+            IO.puts v
+        		vs = Enum.map(:string.tokens(:string.to_lower(v), ','), fn t -> :string.strip(t) end)
             	#vs = [:string:strip(t) || t <- :string.tokens(:string.to_lower(v), ",")]
-            	{:lists.member("upgrade", vs), req2}
+            	{:lists.member('upgrade', vs), req2}
     	end
     end
 
 	def get_action(service, req) do
     	{dispatch, req} = dispatch_req(service, req)
+      IO.puts "dispatch request performed..."
     	case dispatch do
         	{:match, {_, action, _, _, _}} ->
             	{{:match, action}, req};
@@ -80,9 +89,14 @@ defmodule Sockjs.Handler do
 
 
     def dispatch_req(%Service{prefix: prefix}, req) do
+      IO.puts "trying perform dispatch_req..."
     	{method, req} = Http.method(req)
+      IO.puts "got method..."
     	{longPath, req} = Http.path(req)
+      IO.puts "got path"
     	{:ok, pathRemainder} = strip_prefix(longPath, prefix)
+      IO.puts "prefix stripped..."
+      IO.puts "going to call dispatch..."
     	{dispatch(method, pathRemainder), req}
     end
 
@@ -111,28 +125,28 @@ defmodule Sockjs.Handler do
     	optsFilters = [:h_sid, :xhr_cors, :cache_for, :xhr_options_post]
     	# websocket does not actually go via handle_req/3 but we need
     	# something in dispatch/2
-    	[{t("/websocket"),              [{:'GET',     :none, :websocket,      []}]},
-     	{t("/xhr_send"),                [{:'POST',    :recv, :xhr_send,       [:h_sid, :h_no_cache, :xhr_cors]},
+    	[{t('/websocket'),              [{:'GET',     :none, :websocket,      []}]},
+     	{t('/xhr_send'),                [{:'POST',    :recv, :xhr_send,       [:h_sid, :h_no_cache, :xhr_cors]},
                                       	{:'OPTIONS', :none, :options,        optsFilters}]},
-     	{t("/xhr"),                     [{:'POST',    :send, :xhr_polling,    [:h_sid, :h_no_cache, :xhr_cors]},
+     	{t('/xhr'),                     [{:'POST',    :send, :xhr_polling,    [:h_sid, :h_no_cache, :xhr_cors]},
                                       	{:'OPTIONS', :none, :options,        optsFilters}]},
-     	{t("/xhr_streaming"),           [{:'POST',    :send, :xhr_streaming,  [:h_sid, :h_no_cache, :xhr_cors]},
+     	{t('/xhr_streaming'),           [{:'POST',    :send, :xhr_streaming,  [:h_sid, :h_no_cache, :xhr_cors]},
                                       	{:'OPTIONS', :none, :options,        optsFilters}]},
-     	{t("/jsonp_send"),              [{:'POST',    :recv, :jsonp_send,     [:h_sid, :h_no_cache]}]},
-     	{t("/jsonp"),                   [{:'GET',     :send, :jsonp,          [:h_sid, :h_no_cache]}]},
-     	{t("/eventsource"),             [{:'GET',     :send, :eventsource,    [:h_sid, :h_no_cache]}]},
-     	{t("/htmlfile"),                [{:'GET',     :send, :htmlfile,       [:h_sid, :h_no_cache]}]},
-     	{p("/websocket"),               [{:'GET',     :none, :rawwebsocket,   []}]},
-     	{p(""),                         [{:'GET',     :none, :welcome_screen, []}]},
-     	{p("/iframe[0-9-.a-z_]*.html"), [{:'GET',     :none, :iframe,         [:cache_for]}]},
-     	{p("/info"),                    [{:'GET',     :none, :info_test,      [:h_no_cache, :xhr_cors]},
+     	{t('/jsonp_send'),              [{:'POST',    :recv, :jsonp_send,     [:h_sid, :h_no_cache]}]},
+     	{t('/jsonp'),                   [{:'GET',     :send, :jsonp,          [:h_sid, :h_no_cache]}]},
+     	{t('/eventsource'),             [{:'GET',     :send, :eventsource,    [:h_sid, :h_no_cache]}]},
+     	{t('/htmlfile'),                [{:'GET',     :send, :htmlfile,       [:h_sid, :h_no_cache]}]},
+     	{p('/websocket'),               [{:'GET',     :none, :rawwebsocket,   []}]},
+     	{p(''),                         [{:'GET',     :none, :welcome_screen, []}]},
+     	{p('/iframe[0-9-.a-z_]*.html'), [{:'GET',     :none, :iframe,         [:cache_for]}]},
+     	{p('/info'),                    [{:'GET',     :none, :info_test,      [:h_no_cache, :xhr_cors]},
                                       	{:'OPTIONS', :none, :options,        [:h_sid, :xhr_cors, :cache_for, :xhr_options_get]}]}
     	]
     end
 
 
-	defp p(s), do: fn (path) -> re(path, "^" ++ s ++ "[/]?\$") end
-	defp t(s), do: fn (path) -> re(path, "^/([^/.]+)/([^/.]+)" ++ s ++ "[/]?\$") end
+	defp p(s), do: fn (path) -> re(path, '^' ++ s ++ '[/]?\$') end
+	defp t(s), do: fn (path) -> re(path, '^/([^/.]+)/([^/.]+)' ++ s ++ '[/]?\$') end
 
 	defp re(path, s) do
     	case :re.run(path, s, [{:capture, :all_but_first, :list}]) do
@@ -146,6 +160,7 @@ defmodule Sockjs.Handler do
     def handle_req(%Service{logger: logger} = service, req) do
       req = logger.(service, req, :http)
       {dispatch, req} = dispatch_req(service, req)
+      IO.puts "calling handle..."
       handle(dispatch, service, req)
     end
 
@@ -161,18 +176,24 @@ defmodule Sockjs.Handler do
     end
 
     defp handle({:match, {type, action, _server, session, filters}}, service, req) do
+      IO.puts "inside handle..."
+      IO.inspect filters
     	{headers, req} = :lists.foldl(
                         	fn (filter, {headers0, req1}) ->
                              apply(Filters, filter, [req1, headers0])
                             	#Filters.filter(req1, headers0)
                         	end, {[], req}, filters)
+      IO.puts "handle first part completed"
+      IO.inspect type
     	case type do
         	:send ->
+              IO.puts "send type..."
             	{info, req} = extract_info(req)
             	_spid = Session.maybe_create(session, service, info)
               apply(Action, action, [req, headers, service, session])
             	#Action.action(req, headers, service, session)
         	:recv ->
+              IO.puts "recv type.."
             	try do
                   apply(Action, action, [req, headers, service, session])
                 	#Action.action(req, headers, service, session)
@@ -181,7 +202,9 @@ defmodule Sockjs.Handler do
                   Http.reply(404, h, "", req)
             	end
         	:none ->
-            	Action.action(req, headers, service)
+              IO.inspect action
+              apply(Action, action, [req, headers, service])
+            	#Action.action(req, headers, service)
     	end
     end
 

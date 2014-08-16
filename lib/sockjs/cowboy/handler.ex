@@ -10,14 +10,18 @@ defmodule Sockjs.Cowboy.Handler do
     def init({_any, :http}, req, service) do
         case Handler.is_valid_ws(service, {:cowboy, req}) do
             {true, {:cowboy, _req}, _reason} ->
+                IO.puts "upgrade protocol..."
                 {:upgrade, :protocol, :cowboy_websocket}
             {false, {:cowboy, req}, _reason} ->
+                IO.puts "not upgrading protocol..."
                 {:ok, req, service}
         end
     end
 
     def handle(req, service) do
+        IO.puts "Sockjs.Cowboy.Handler..."
         {:cowboy, req} = Handler.handle_req(service, {:cowboy, req})
+        IO.puts "Sockjs.Cowboy.Handler ending..."
         {:ok, req, service}
     end
 

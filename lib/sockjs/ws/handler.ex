@@ -2,7 +2,8 @@ defmodule Sockjs.Ws.Handler do
 
 	alias Sockjs.Json
 	alias Sockjs.Util
-	
+	alias Sockjs.Session 
+    
 	# Ignore empty
 	def received(_rawWebsocket, _sessionPid, <<>>) do
     	:ok

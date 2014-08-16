@@ -66,7 +66,7 @@ defmodule Sockjs.Http do
     end
 
 	def jsessionid({:cowboy, req}) do
-    	{c, req} = :cowboy_req.cookie(<<"jsessionid">>, req)
+    	{c, req} = :cowboy_req.cookie("jsessionid", req)
     	case c do
         	_ when is_binary(c) ->
             	{:erlang.binary_to_list(c), {:cowboy, req}}
@@ -94,8 +94,9 @@ defmodule Sockjs.Http do
     end
 
 	def reply(code, headers, body, {:cowboy, req}) do
-    	body = :erlang.iolist_to_binary(body)
-    	{:ok, req} = :cowboy_req.reply(code, enbinary(headers), body, req)
+    	#body = :erlang.iolist_to_binary(body)
+    	#{:ok, req} = :cowboy_req.reply(code, enbinary(headers), body, req)
+        {:ok, req} = :cowboy_req.reply(code, headers, body, req)
     	{:cowboy, req}
     end
 
@@ -115,7 +116,7 @@ defmodule Sockjs.Http do
 
 	def chunk_end({:cowboy, _req} = r), do: r
 
-
+    # why is this needed?
 	defp enbinary(l), do: Enum.map(l, fn {k, v} -> {:erlang.list_to_binary(k), :erlang.list_to_binary(v)} end)
 
 	#enbinary(L) -> [{list_to_binary(K), list_to_binary(V)} || {K, V} <- L].

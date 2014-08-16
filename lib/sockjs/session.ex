@@ -150,7 +150,7 @@ defmodule Sockjs.Session do
     		end
     	case r do 
     		{:ok, userState1} -> %Session{state | state: userState1}
-    		{:ok} -> state
+    		{:ok } -> state
     	end
 
     end

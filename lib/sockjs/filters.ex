@@ -1,9 +1,11 @@
 defmodule Sockjs.Filters do 
 
+  alias Sockjs.Http
+  
 	@year 365 * 24 * 60 * 60
 
 	def cache_for(req, headers) do
-    	expires = :calendar.gregorian_seconds_to_datetime(
+      expires = :calendar.gregorian_seconds_to_datetime(
                 	:calendar.datetime_to_gregorian_seconds(
                   :calendar.now_to_datetime(:erlang.now())) + @year)
     	h = [{"Cache-Control", 'public, max-age=' ++ :erlang.integer_to_list(@year)},
@@ -32,6 +34,7 @@ defmodule Sockjs.Filters do
 
 	def xhr_cors(req, headers) do
     	{originH, req} = Http.header(:'origin', req)
+      IO.puts "aaaa"
      	origin = case originH do
                   "null" -> "*"
                   :undefined -> "*"
@@ -45,6 +48,7 @@ defmodule Sockjs.Filters do
                    	   end
     	h = [{"Access-Control-Allow-Origin",      origin},
          {"Access-Control-Allow-Credentials", "true"}]
+      IO.puts "xhr_cors endinf.."
     	{h ++ allowHeaders ++ headers, req}
     end
 
