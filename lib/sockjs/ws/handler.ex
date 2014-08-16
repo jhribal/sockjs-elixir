@@ -34,7 +34,7 @@ defmodule Sockjs.Ws.Handler do
 
 	def reply(:websocket, sessionPid) do
     	case Session.reply(sessionPid) do
-        	{w, frame} when w !== :ok or w !== :close ->
+        	{w, frame} when w == :ok or w == :close ->
             	frame = Util.encode_frame(frame)
             	{w, :erlang.iolist_to_binary(frame)}
         	:wait ->
@@ -44,7 +44,7 @@ defmodule Sockjs.Ws.Handler do
 
     def reply(:rawwebsocket, sessionPid) do
     	case Session.reply(sessionPid, false) do
-        	{w, frame} when w !== :ok or w !== :close ->
+        	{w, frame} when w == :ok or w == :close ->
             	case frame do
                 	{:open, nil}               -> reply(:rawwebsocket, sessionPid)
                 	{:close, {_code, _reason}} -> {:close, <<>>}

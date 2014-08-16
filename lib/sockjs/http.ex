@@ -1,13 +1,12 @@
 defmodule Sockjs.Http do
 
-	def path({:cowboy, req}) do     
-		{path, req} = :cowboy_req.path(req)
-		{:erlang.binary_to_list(path), {:cowboy, req}}
+	def path(req) do     
+        :cowboy_req.path(req)
 	end
 
-	def method({:cowboy, req}) do 
+	def method(req) do 
 		{method, req} = :cowboy_req.method(req)
-		{method_atom(method), {:cowboy, req}}
+		{method_atom(method), req}
 	end
 
 	defp method_atom("GET"), do: :'GET'
@@ -25,15 +24,15 @@ defmodule Sockjs.Http do
 	defp method_atom(:'PATCH'), do: :'PATCH'
 	defp method_atom(:'HEAD'), do: :'HEAD'
 
-	def body({:cowboy, req}) do 
+	def body(req) do 
 		{:ok, body, req} = :cowboy_req.body(req)
-        {body, {:cowboy, req}}
+        {body, req}
     end
 
 	def body_qs(req) do
-    	{h, req} =  header(:'content-type', req)
+    	{h, req} = header("content-type", req)
     	case h do
-        	h when h === "text/plain" or h === "" ->
+            h when h == "text/plain" or h == "" ->
             	body(req)
         	_ ->
             	# By default assume application/x-www-form-urlencoded
@@ -42,101 +41,82 @@ defmodule Sockjs.Http do
     end
 
 
-	defp body_qs2({:cowboy, req}) do
+	defp body_qs2(req) do
     	{:ok, bodyQS, req} = :cowboy_req.body_qs(req)
-    	case :proplists.get_value(<<"d">>, bodyQS) do
+    	case Keyword.get(bodyQS, "d", :undefined) do
         	:undefined ->
-            	{<<>>, {:cowboy, req}}
+            	{"", req}
         	v ->
-            	{v, {:cowboy, req}}
+            	{v, req}
         end
     end
 
-	def header(k, {:cowboy, req}) do
-    	{h, req} = :cowboy_req.header(k, req)
-    	{v, req} = case h do
-                   		:undefined ->
-                        	:cowboy_req.header(:erlang.atom_to_binary(k, :utf8), req)
-                    	_ -> {h, req}
-                   end
-    	case v do
-        	:undefined -> {:undefined, {:cowboy, req}}
-        	_ -> {:erlang.binary_to_list(v), {:cowboy, req}}
-        end
+	def header(h, req) do
+        :cowboy_req.header(h, req)
     end
 
-	def jsessionid({:cowboy, req}) do
-    	{c, req} = :cowboy_req.cookie("jsessionid", req)
-    	case c do
-        	_ when is_binary(c) ->
-            	{:erlang.binary_to_list(c), {:cowboy, req}}
-        	:undefined ->
-            	{:undefined, {:cowboy, req}}
-    	end
+	def jsessionid(req) do
+        :cowboy_req.cookie("jsessionid", req)
     end
 
-    def callback({:cowboy, req}) do
-    	{cb, req} = :cowboy_req.qs_val(<<"c">>, req)
-    	case cb do
-        	:undefined -> {:undefined, {:cowboy, req}}
-        	_ -> {:erlang.binary_to_list(cb), {:cowboy, req}}
-        end
+    def callback(req) do
+        :cowboy_req.qs_val("c", req)
     end
 
-	def peername({:cowboy, req}) do
-    	{p, req} = :cowboy_req.peer(req)
-    	{p, {:cowboy, req}}
+	def peername(req) do
+        :cowboy_req.peer(req)
     end
 
-	def sockname({:cowboy, req} = r) do
-    	{addr, _req} = :cowboy_req.peer(req)
-    	{addr, r}
+	def sockname(req) do
+    	:cowboy_req.peer(req)
     end
 
-	def reply(code, headers, body, {:cowboy, req}) do
+	def reply(code, headers, body, req) do
     	#body = :erlang.iolist_to_binary(body)
     	#{:ok, req} = :cowboy_req.reply(code, enbinary(headers), body, req)
         {:ok, req} = :cowboy_req.reply(code, headers, body, req)
-    	{:cowboy, req}
+    	req
     end
 
-	def chunk_start(code, headers, {:cowboy, req}) do
-    	{:ok, req} = :cowboy_req.chunked_reply(code, enbinary(headers), req)
-    	{:cowboy, req}
+	def chunk_start(code, headers, req) do
+    	#{:ok, req} = :cowboy_req.chunked_reply(code, enbinary(headers), req)
+        {:ok, req} = :cowboy_req.chunked_reply(code, headers, req)
+    	req
     end
 
-    def chunk(chunk, {:cowboy, req} = r) do
+    def chunk(chunk, req) do
     	case :cowboy_req.chunk(chunk, req) do
-        	:ok -> {:ok, r}
-        	{:error, _e} -> {:error, r}
+        	:ok -> {:ok, req}
+        	{:error, _e} -> {:error, req}
                       # This shouldn't happen too often, usually we
                       # should catch tco socket closure before.
     	end
     end
 
-	def chunk_end({:cowboy, _req} = r), do: r
+    # this should really does nothing?
+	def chunk_end(req), do: req
 
     # why is this needed?
-	defp enbinary(l), do: Enum.map(l, fn {k, v} -> {:erlang.list_to_binary(k), :erlang.list_to_binary(v)} end)
+	# defp enbinary(l), do: Enum.map(l, fn {k, v} -> {:erlang.list_to_binary(k), :erlang.list_to_binary(v)} end)
 
 	#enbinary(L) -> [{list_to_binary(K), list_to_binary(V)} || {K, V} <- L].
 
-	def hook_tcp_close({:cowboy, req} = r) do
+	def hook_tcp_close(req) do
     	[t, s] = :cowboy_req.get([:transport, :socket], req)
     	t.setopts(s,[{:active,:once}])
-    	r
+    	req
 	end
 
-	def unhook_tcp_close({:cowboy, req} = r) do
+	def unhook_tcp_close(req) do
     	[t, s] = :cowboy_req.get([:transport, :socket], req)
     	t.setopts(s,[{:active,false}])
-    	r 
+    	req
     end
 
-	def abruptly_kill({:cowboy, req} = r) do
+	def abruptly_kill(req) do
     	[t, s] = :cowboy_req.get([:transport, :socket], req)
     	:ok = t.close(s)
-    	r
+    	req
     end
 
 end

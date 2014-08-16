@@ -8,20 +8,16 @@ defmodule Sockjs.Cowboy.Handler do
     alias Sockjs.Session
 
     def init({_any, :http}, req, service) do
-        case Handler.is_valid_ws(service, {:cowboy, req}) do
-            {true, {:cowboy, _req}, _reason} ->
-                IO.puts "upgrade protocol..."
+        case Handler.is_valid_ws(service, req) do
+            {true, _req, _reason} ->
                 {:upgrade, :protocol, :cowboy_websocket}
-            {false, {:cowboy, req}, _reason} ->
-                IO.puts "not upgrading protocol..."
+            {false, req, _reason} ->
                 {:ok, req, service}
         end
     end
 
     def handle(req, service) do
-        IO.puts "Sockjs.Cowboy.Handler..."
-        {:cowboy, req} = Handler.handle_req(service, {:cowboy, req})
-        IO.puts "Sockjs.Cowboy.Handler ending..."
+        req = Handler.handle_req(service, req)
         {:ok, req, service}
     end
 
@@ -30,16 +26,16 @@ defmodule Sockjs.Cowboy.Handler do
     end
 
     def websocket_init(_transportName, req, %Service{logger: logger} = service) do
-        req = logger.(service, {:cowboy, req}, :websocket)
+        req = logger.(service, req, :websocket)
 
-        service = %Service{service| disconnect_delay: 5*60*1000}
+        service = %Service{service | disconnect_delay: 5*60*1000}
 
         {info, req} = Handler.extract_info(req)
         sessionPid = Session.maybe_create(:undefined, service, info)
-        {rawWebsocket, {:cowboy, req}} =
+        {rawWebsocket, req } =
             case Handler.get_action(service, req) do
-                {{:match, ws}, req} when ws !== :websocket or
-                                     ws !== :rawwebsocket ->
+                {{:match, ws}, req} when ws == :websocket or
+                                     ws == :rawwebsocket ->
                     {ws, req}
             end
         send(self(), :go)

@@ -259,8 +259,8 @@ defmodule Sockjs.Action do
   end
 
 	def websocket(req, headers, service) do
-    	{_any, req, {r1, r2}} = Handler.is_valid_ws(service, req)
-    	case {r1, r2} do
+    	{_any, req, {isUpgradeOk?, isConnOk?}} = Handler.is_valid_ws(service, req)
+    	case {isUpgradeOk?, isConnOk?} do
         	{false, _} ->
             	Http.reply(400, headers,
                               "Can \"Upgrade\" only to \"WebSocket\".", req)

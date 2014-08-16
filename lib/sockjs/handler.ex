@@ -8,65 +8,60 @@ defmodule Sockjs.Handler do
 	@sockjs_url "https://d1fxtkz8shb9d2.cloudfront.net/sockjs-0.3.min.js"
 
 	def init_state(prefix, callback, state, options) do
-	    %Service{prefix: :erlang.binary_to_list(prefix),
+	    %Service{prefix: prefix,
 	             callback: callback,
 	             state: state,
-	             sockjs_url: :proplists.get_value(:sockjs_url, options, @sockjs_url),
-	             websocket: :proplists.get_value(:websocket, options, true),
-	             cookie_needed: :proplists.get_value(:cookie_needed, options, false),
-	             disconnect_delay: :proplists.get_value(:disconnect_delay, options, 5000),
-	             heartbeat_delay: :proplists.get_value(:heartbeat_delay, options, 25000),
-	             response_limit: :proplists.get_value(:response_limit, options, 128*1024),
-	             logger: :proplists.get_value(:logger, options, &default_logger/3)
-	            }
+	             sockjs_url: Keyword.get(options, :sockjs_url, @sockjs_url),
+	             websocket: Keyword.get(options, :websocket, true),
+	             cookie_needed: Keyword.get(options, :cookie_needed, false),
+	             disconnect_delay: Keyword.get(options, :disconnect_delay, 5000),
+	             heartbeat_delay: Keyword.get(options, :heartbeat_delay, 25000),
+	             response_limit: Keyword.get(options, :response_limit, 128*1024),
+	             logger: Keyword.get(options, :logger, &default_logger/3)}
 	end
-
 
 	def is_valid_ws(service, req) do
       IO.puts "validating ws request.."
     	case get_action(service, req) do
-        	{{:match, ws}, req1} when ws !== :websocket or
-                                 ws !== :rawwebsocket ->
+        	{{:match, ws}, req} when ws != :websocket or ws != :rawwebsocket ->
               IO.puts "calling valid_ws_request..."
-            	valid_ws_request(service, req1)
-        	{_else, req1} ->
+            	valid_ws_request(service, req)
+        	{_else, req} ->
               IO.puts "invalid ws request"
-            	{false, req1, {}}
+            	{false, req, {}}
     	end
-    end
+  end
 
 	defp valid_ws_request(_service, req) do
-    	{r1, req} = valid_ws_upgrade(req)
-    	{r2, req} = valid_ws_connection(req)
-    	{r1 and r2, req, {r1, r2}}
-    end
+    	{isUpgradeOk?, req} = valid_ws_upgrade(req)
+    	{isConnOk?, req} = valid_ws_connection(req)
+    	{isUpgradeOk? and isConnOk?, req, {isUpgradeOk?, isConnOk?}}
+  end
 
-    defp valid_ws_upgrade(req) do
+  defp valid_ws_upgrade(req) do
     	case Http.header("upgrade", req) do
-        	{:undefined, req2} ->
-            	{false, req2}
-        	{v, req2} ->
-            	case :string.to_lower(v) do
-                	'websocket' ->
-                      IO.puts "zmrdiiiiii"
-                    	{true, req2}
-                	_else ->
-                    	{false, req2}
+        	{:undefined, req} ->
+            	{false, req}
+        	{upgrade_val, req} ->
+            	case String.downcase(upgrade_val) do
+                	"websocket" ->
+                    	{true, req}
+                	_ ->
+                    	{false, req}
             	end
-    	end
-    end
+      end
+  end
 
 	defp valid_ws_connection(req) do
-   		case Http.header(:'connection', req) do
-        	{:undefined, req2} ->
-            	{false, req2}
-        	{v, req2} ->
-            IO.puts v
-        		vs = Enum.map(:string.tokens(:string.to_lower(v), ','), fn t -> :string.strip(t) end)
-            	#vs = [:string:strip(t) || t <- :string.tokens(:string.to_lower(v), ",")]
-            	{:lists.member('upgrade', vs), req2}
+   		case Http.header("connection", req) do
+        	{:undefined, req} ->
+            	{false, req}
+        	{conn_val, req} ->
+            IO.inspect conn_val
+        		conn_val_parts = Enum.map(String.split(String.downcase(conn_val), ","), fn (t) -> String.strip(t) end)
+            {Enum.member?(conn_val_parts, "upgrade"), req}
     	end
-    end
+  end
 
 	def get_action(service, req) do
     	{dispatch, req} = dispatch_req(service, req)
@@ -74,16 +69,19 @@ defmodule Sockjs.Handler do
     	case dispatch do
         	{:match, {_, action, _, _, _}} ->
             	{{:match, action}, req};
-        	_else ->
+        	_ ->
             	{:nomatch, req}
     	end
     end
 
     defp strip_prefix(longPath, prefix) do
-    	{a, b} = :lists.split(length(prefix), longPath)
+    	{a, b} = String.split_at(longPath, String.length(prefix))
+      # is this function really needed? Cowboy will not handle request with sockjs handler if
+      # the prefix didn't matched
     	case prefix do
         	^a -> {:ok, b}
-        	_any -> {:error, :io_lib.format("Wrong prefix: ~p is not ~p", [a, prefix])}
+        	#_any -> {:error, :io_lib.format("Wrong prefix: ~p is not ~p", [a, prefix])}
+          _ -> {:error, "Wrong prefix: #{a} is not #{prefix}"}
     	end
     end
 
@@ -94,6 +92,7 @@ defmodule Sockjs.Handler do
       IO.puts "got method..."
     	{longPath, req} = Http.path(req)
       IO.puts "got path"
+      IO.inspect {longPath, prefix}
     	{:ok, pathRemainder} = strip_prefix(longPath, prefix)
       IO.puts "prefix stripped..."
       IO.puts "going to call dispatch..."
@@ -217,7 +216,7 @@ defmodule Sockjs.Handler do
     end
 
 	def extract_info(req) do
-    	{peer, req}    =  Http.peername(req)
+    	{peer, req}    = Http.peername(req)
     	{sock, req}    = Http.sockname(req)
     	{path, req}    = Http.path(req)
     	{headers, req} = :lists.foldl(fn (h, {acc, r0}) ->

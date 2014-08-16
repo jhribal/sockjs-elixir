@@ -1,6 +1,6 @@
 defmodule Sockjs.Service do
 
-	defstruct prefix: nil,
+       defstruct prefix: nil,
               callback: nil, 
               state: nil,
               sockjs_url: nil,
