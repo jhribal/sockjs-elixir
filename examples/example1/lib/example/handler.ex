@@ -1,15 +1,19 @@
 defmodule Example.Handler do
 
-	def sockjs_init(handle, state) do
+	alias Sockjs.Session
+
+	# this should be changed
+	def sockjs_init({_, {spid,_}}, state) do
 		IO.puts "!!!!!!! HANDLER INIT !!!!!!!!!!"
+		Session.sendData(spid, [%{message: "Ahoj"}])
 		{:ok, state} 
 	end
 
-	def sockjs_handle(handle, data, state) do
+	def sockjs_handle({_, {spid,_}}, data, state) do
 		{:ok, state} 
 	end
 
-	def sockjs_terminate(handle, state) do
+	def sockjs_terminate({_, {spid,_}}, state) do
 		{:ok, state} 
 	end
 

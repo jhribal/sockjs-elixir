@@ -2,13 +2,13 @@ defmodule Sockjs.Json do
 	use Jazz
 
 	def encode(thing) do
-		IO.puts "calling encode.."
-		r = JSON.encode!(thing)
-		IO.inspect r 
+		IO.puts "#ENCODING#"
+		IO.inspect JSON.encode!(thing) 
 	end
 
 	def decode(encoded) do
-		{:ok, JSON.decode!(encoded)}
+		IO.puts "#DECODING#"
+		IO.inspect {:ok, JSON.decode!(encoded)}
 	end
 end
 

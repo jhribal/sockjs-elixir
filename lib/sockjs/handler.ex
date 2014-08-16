@@ -4,7 +4,8 @@ defmodule Sockjs.Handler do
   alias Sockjs.Http
   alias Sockjs.Filters
   alias Sockjs.Action
-
+  alias Sockjs.Session 
+  
 	@sockjs_url "https://d1fxtkz8shb9d2.cloudfront.net/sockjs-0.3.min.js"
 
 	def init_state(prefix, callback, state, options) do
@@ -21,13 +22,10 @@ defmodule Sockjs.Handler do
 	end
 
 	def is_valid_ws(service, req) do
-      IO.puts "validating ws request.."
     	case get_action(service, req) do
         	{{:match, ws}, req} when ws != :websocket or ws != :rawwebsocket ->
-              IO.puts "calling valid_ws_request..."
             	valid_ws_request(service, req)
         	{_else, req} ->
-              IO.puts "invalid ws request"
             	{false, req, {}}
     	end
   end
@@ -57,7 +55,6 @@ defmodule Sockjs.Handler do
         	{:undefined, req} ->
             	{false, req}
         	{conn_val, req} ->
-            IO.inspect conn_val
         		conn_val_parts = Enum.map(String.split(String.downcase(conn_val), ","), fn (t) -> String.strip(t) end)
             {Enum.member?(conn_val_parts, "upgrade"), req}
     	end
@@ -65,7 +62,6 @@ defmodule Sockjs.Handler do
 
 	def get_action(service, req) do
     	{dispatch, req} = dispatch_req(service, req)
-      IO.puts "dispatch request performed..."
     	case dispatch do
         	{:match, {_, action, _, _, _}} ->
             	{{:match, action}, req};
@@ -87,15 +83,9 @@ defmodule Sockjs.Handler do
 
 
     def dispatch_req(%Service{prefix: prefix}, req) do
-      IO.puts "trying perform dispatch_req..."
     	{method, req} = Http.method(req)
-      IO.puts "got method..."
     	{longPath, req} = Http.path(req)
-      IO.puts "got path"
-      IO.inspect {longPath, prefix}
     	{:ok, pathRemainder} = strip_prefix(longPath, prefix)
-      IO.puts "prefix stripped..."
-      IO.puts "going to call dispatch..."
     	{dispatch(method, pathRemainder), req}
     end
 
@@ -159,7 +149,6 @@ defmodule Sockjs.Handler do
     def handle_req(%Service{logger: logger} = service, req) do
       req = logger.(service, req, :http)
       {dispatch, req} = dispatch_req(service, req)
-      IO.puts "calling handle..."
       handle(dispatch, service, req)
     end
 
@@ -175,24 +164,18 @@ defmodule Sockjs.Handler do
     end
 
     defp handle({:match, {type, action, _server, session, filters}}, service, req) do
-      IO.puts "inside handle..."
-      IO.inspect filters
     	{headers, req} = :lists.foldl(
                         	fn (filter, {headers0, req1}) ->
                              apply(Filters, filter, [req1, headers0])
                             	#Filters.filter(req1, headers0)
                         	end, {[], req}, filters)
-      IO.puts "handle first part completed"
-      IO.inspect type
     	case type do
         	:send ->
-              IO.puts "send type..."
             	{info, req} = extract_info(req)
             	_spid = Session.maybe_create(session, service, info)
               apply(Action, action, [req, headers, service, session])
             	#Action.action(req, headers, service, session)
         	:recv ->
-              IO.puts "recv type.."
             	try do
                   apply(Action, action, [req, headers, service, session])
                 	#Action.action(req, headers, service, session)
@@ -201,7 +184,6 @@ defmodule Sockjs.Handler do
                   Http.reply(404, h, "", req)
             	end
         	:none ->
-              IO.inspect action
               apply(Action, action, [req, headers, service])
             	#Action.action(req, headers, service)
     	end

@@ -5,6 +5,7 @@ defmodule Sockjs.Action do
   alias Sockjs.Util
   alias Sockjs.Json
   alias Sockjs.Handler
+  alias Sockjs.Session 
   
 	@iframe """
 	<!DOCTYPE html>
@@ -66,16 +67,12 @@ defmodule Sockjs.Action do
 
 	def info_test(req, headers, %Service{websocket: websocket,
                                  		 cookie_needed: cookieNeeded}) do
-      IO.puts "starting info test..."
     	i = %{websocket: websocket,
             cookie_needed: cookieNeeded,
             origins: ["*:*"],
             entropy: Util.rand32()}
-      IO.inspect i
     	d = Json.encode(i)
-      IO.puts "after json encode..."
     	h = [{"Content-Type", "application/json; charset=UTF-8"}]
-      IO.puts "ending info test..."
     	Http.reply(200, h ++ headers, d, req)
   end
 

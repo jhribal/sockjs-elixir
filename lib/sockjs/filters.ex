@@ -34,7 +34,6 @@ defmodule Sockjs.Filters do
 
 	def xhr_cors(req, headers) do
     	{originH, req} = Http.header(:'origin', req)
-      IO.puts "aaaa"
      	origin = case originH do
                   "null" -> "*"
                   :undefined -> "*"
@@ -48,7 +47,6 @@ defmodule Sockjs.Filters do
                    	   end
     	h = [{"Access-Control-Allow-Origin",      origin},
          {"Access-Control-Allow-Credentials", "true"}]
-      IO.puts "xhr_cors endinf.."
     	{h ++ allowHeaders ++ headers, req}
     end
 

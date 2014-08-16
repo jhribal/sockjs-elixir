@@ -58,8 +58,10 @@ defmodule Sockjs.Cowboy.Handler do
         case Sockjs.Ws.Handler.reply(rawWebsocket, sessionPid) do
             :wait          -> {:ok, req, s}
             {:ok, data}    -> send(self(), :go)
+                              IO.puts "#BEFORE SENDING TO BROWSER#"
+                              IO.inspect data
                               {:reply, {:text, data}, req, s}
-            {:close, <<>>} -> {:shutdown, req, s}
+            {:close, ""} -> {:shutdown, req, s}
             {:close, data} -> send(self(), :shutdown)
                               {:reply, {:text, data}, req, s}
         end

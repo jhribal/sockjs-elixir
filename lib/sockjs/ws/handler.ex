@@ -36,7 +36,7 @@ defmodule Sockjs.Ws.Handler do
     	case Session.reply(sessionPid) do
         	{w, frame} when w == :ok or w == :close ->
             	frame = Util.encode_frame(frame)
-            	{w, :erlang.iolist_to_binary(frame)}
+            	{w, frame}
         	:wait ->
             	:wait
         end

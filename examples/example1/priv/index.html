@@ -9,10 +9,13 @@
     <script type="text/javascript" src="jquery-2.1.1.min.js"></script>
     <script src="http://cdn.sockjs.org/sockjs-0.3.min.js"></script>
     <script type="text/javascript">
-      var sock = new SockJS('http://localhost:4040/rt');
+      var sock = new SockJS('http://localhost:4040/rt', null, {'protocols_whitelist': ['xhr-polling']});
       sock.onopen = function () {
         console.log("open");
       };
+      sock.onmessage = function (msg) {
+        console.log(msg.data);
+      }
     </script>
     <title>Hello Sockjs-elixir!</title>
   </head>

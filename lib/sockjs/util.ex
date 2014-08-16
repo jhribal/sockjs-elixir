@@ -1,5 +1,7 @@
 defmodule Sockjs.Util do 
 
+    alias Sockjs.Json
+
 	def rand32() do
     	case Process.get(:random_seeded) do
         	:undefined ->
@@ -13,17 +15,19 @@ defmodule Sockjs.Util do
     end
 
 	def encode_frame({:open, nil}) do
+        IO.puts "#ENCODING OPEN RESPONSE#"
         "o"
     end
 
 	def encode_frame({:close, {code, reason}}) do
-    	["c", Json.encode([code, :erlang.list_to_binary(reason)])]
+    	["c", Json.encode([code, reason])]
     end
 
 	def encode_frame({:data, l}) do
     	["a", 
      		#Json.encode([:erlang.iolist_to_binary(d) || d <- l])]
-     		Json.encode(Enum.map(l, fn d -> :erlang.iolist_to_binary(d) end))]
+     		#Json.encode(Enum.map(l, fn d -> :erlang.iolist_to_binary(d) end))]
+            Json.encode(l)]
     end
 
 	def encode_frame({:heartbeat, nil}) do

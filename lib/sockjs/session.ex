@@ -48,7 +48,7 @@ defmodule Sockjs.Session do
 		received(message, spid(sessionId)) 
 	end
 
-	def sendData(data, {__MODULE__, {sspid, _}}) do 
+	def sendData(sspid, data) do 
 		GenServer.cast(sspid, {:send, data})
 		:ok
 	end
@@ -196,7 +196,7 @@ defmodule Sockjs.Session do
     def handle_call({:reply, pid, multiple}, _from, %Session{ready_state: :open,
                                              			     response_pid: rpid,
                                              				 heartbeat_tref: heartbeatTRef,
-                                             				 outbound_queue: q} = state)
+                                            				 outbound_queue: q} = state)
     	when rpid == :undefined or rpid == pid do 
     	{messages, q} = case multiple do 
     						true -> {:queue.to_list(q), :queue.new()}
@@ -236,8 +236,9 @@ defmodule Sockjs.Session do
                                             response_pid: rpid} = state) do
     	case rpid do
         	:undefined -> :ok
-        	_else     -> send(rpid, :go)
+        	_     -> send(rpid, :go)
     	end
+        IO.puts "adding data to queue"
     	{:noreply, %Session{state | outbound_queue: :queue.in(data, q)}}
     end
 
