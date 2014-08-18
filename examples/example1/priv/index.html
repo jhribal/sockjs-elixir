@@ -16,6 +16,9 @@
       sock.onmessage = function (msg) {
         console.log(msg.data);
       }
+      sock.onclose = function () {
+        console.log('closed');
+      }
     </script>
     <title>Hello Sockjs-elixir!</title>
   </head>
