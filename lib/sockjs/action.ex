@@ -67,10 +67,10 @@ defmodule Sockjs.Action do
 
 	def info_test(req, headers, %Service{websocket: websocket,
                                  		 cookie_needed: cookieNeeded}) do
-    	i = %{websocket: websocket,
+    	i = [websocket: websocket,
             cookie_needed: cookieNeeded,
             origins: ["*:*"],
-            entropy: Util.rand32()}
+            entropy: Util.rand32()]
     	d = Json.encode(i)
     	h = [{"Content-Type", "application/json; charset=UTF-8"}]
     	Http.reply(200, h ++ headers, d, req)
@@ -151,7 +151,7 @@ defmodule Sockjs.Action do
 
   defp handle_recv(req, body, session) do
    		case body do
-        	_any when body !== <<>> ->
+        	_any when body == "" ->
             	{:error, Http.reply(500, [], "Payload expected.", req)}
         	_any ->
             	case Json.decode(body) do

@@ -25,6 +25,7 @@ defmodule Sockjs.Mixfile do
   #
   # Type `mix help deps` for more examples and options
   defp deps do
-    [{:jazz, git: "https://github.com/meh/jazz"}, {:cowboy, git: "https://github.com/ninenines/cowboy"}]
+    #[{:jazz, git: "https://github.com/meh/jazz"}, {:cowboy, git: "https://github.com/ninenines/cowboy"}]
+    [{:json,   "~> 0.3.0"}, {:cowboy, git: "https://github.com/ninenines/cowboy"}]
   end
 end

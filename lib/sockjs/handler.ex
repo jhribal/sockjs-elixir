@@ -8,6 +8,65 @@ defmodule Sockjs.Handler do
   
 	@sockjs_url "https://d1fxtkz8shb9d2.cloudfront.net/sockjs-0.3.min.js"
 
+  defmacro __using__([]) do
+
+    quote do
+      import unquote(__MODULE__), only: :macros
+
+      init do 
+      end
+      handle do 
+      end 
+      terminate do 
+      end
+
+      defoverridable [sockjs_init: 3, sockjs_handle: 4, sockjs_terminate: 3]
+
+    end
+
+  end
+
+  defmacro reply(data) do
+    quote do
+      Sockjs.Session.sendData(var!(spid), unquote(data)) 
+    end 
+  end
+
+  defmacro close(code, reason) do
+    quote do
+      Sockjs.Session.close(var!(spid), unquote(code), unquote(reason)) 
+    end 
+  end
+
+  defmacro init(do: body) do
+
+    quote do
+      def sockjs_init(var!(spid), var!(info), var!(state)) do
+        unquote(body)
+        {:ok, var!(state)} 
+      end 
+    end
+
+  end
+
+  defmacro handle(do: body) do
+    quote do 
+      def sockjs_handle(var!(spid), var!(info), var!(data), var!(state)) do
+        unquote(body)
+        {:ok, var!(state)}
+      end
+    end 
+  end
+
+  defmacro terminate(do: body) do
+    quote do 
+      def sockjs_terminate(var!(spid), var!(info), var!(state)) do
+        unquote(body)
+        {:ok, var!(state)} 
+      end
+    end 
+  end
+
 	def init_state(prefix, callback, state, options) do
 	    %Service{prefix: prefix,
 	             callback: callback,
@@ -164,11 +223,9 @@ defmodule Sockjs.Handler do
     end
 
     defp handle({:match, {type, action, _server, session, filters}}, service, req) do
-    	{headers, req} = :lists.foldl(
-                        	fn (filter, {headers0, req1}) ->
-                             apply(Filters, filter, [req1, headers0])
-                            	#Filters.filter(req1, headers0)
-                        	end, {[], req}, filters)
+      {headers, req} = List.foldl(filters, {[], req}, fn (filter, {headers, req}) ->
+                                                          apply(Filters, filter, [req, headers])
+                                                      end)
     	case type do
         	:send ->
             	{info, req} = extract_info(req)

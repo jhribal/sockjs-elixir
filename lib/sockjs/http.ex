@@ -86,8 +86,10 @@ defmodule Sockjs.Http do
 
     def chunk(chunk, req) do
     	case :cowboy_req.chunk(chunk, req) do
-        	:ok -> {:ok, req}
-        	{:error, _e} -> {:error, req}
+        	:ok -> 
+                {:ok, req}
+        	{:error, _e} -> 
+                {:error, req}
                       # This shouldn't happen too often, usually we
                       # should catch tco socket closure before.
     	end

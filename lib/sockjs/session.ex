@@ -37,8 +37,8 @@ defmodule Sockjs.Session do
 		end 
 	end
 
-	def received(message, sessionId) when is_pid(sessionId) do
-		case GenServer.call(sessionId, {:received, message}, :infinity) do 
+	def received(message, sessionPid) when is_pid(sessionPid) do
+		case GenServer.call(sessionPid, {:received, message}, :infinity) do 
 			:ok -> :ok
 			:error -> throw(:no_session)
 		end
@@ -53,7 +53,7 @@ defmodule Sockjs.Session do
 		:ok
 	end
 
-	def close(code, reason, {__MODULE__, {sspid, _}}) do
+	def close(sspid, code, reason) do
 		GenServer.cast(sspid, {:close, code, reason})
 		:ok 
 	end
@@ -137,17 +137,12 @@ defmodule Sockjs.Session do
 
     defp emit(what, %Session{callback: callback, 
     						state: userState,
-    						handle: handle} = state) do 
-    	r = case callback do 
-    			_ when is_function(callback) ->
-    					callback.(handle, what, userState)
-    			_ when is_atom(callback) ->
-    					case what do 
-    						:init -> callback.sockjs_init(handle, userState)
-    						{:recv, data} -> callback.sockjs_handle(handle, data, userState)
-    						:closed -> callback.sockjs_terminate(handle, userState)
-    					end
-    		end
+    						handle: {sspid, info}} = state) do 
+    	r = case what do 
+            :init -> callback.sockjs_init(sspid, info, userState)
+            {:recv, data} -> callback.sockjs_handle(sspid, info, data, userState)
+            :closed -> callback.sockjs_terminate(sspid, info, userState)
+        end
     	case r do 
     		{:ok, userState1} -> %Session{state | state: userState1}
     		{:ok } -> state
@@ -173,7 +168,7 @@ defmodule Sockjs.Session do
                   	   disconnect_delay: disconnectDelay,
                   	   heartbeat_tref: :undefined,
                   	   heartbeat_delay: heartbeatDelay,
-                  	   handle: {__MODULE__, {self(), info}}}}
+                  	   handle: {self(), info}}}
     end
 
 
@@ -183,9 +178,19 @@ defmodule Sockjs.Session do
     	{:reply, {:ok, {:open, nil}}, %Session{state | ready_state: :open}}
     end
 
-    def handle_call({:reply, pid, _multiple}, _from, %Session{ready_state: :closed, close_msg: closeMsg} = state) do
+    def handle_call({:reply, pid, multiple}, _from, %Session{ready_state: :closed, close_msg: closeMsg, outbound_queue: q} = state) do
     	state = unmark_waiting(pid, state)
-    	{:reply, {:close, {:close, closeMsg}}, state}
+        if :queue.is_empty(q) == true do
+            {:reply, {:close, {:close, closeMsg}}, state} 
+        else
+            {messages, q} = case multiple do 
+                                true -> {:queue.to_list(q), :queue.new()}
+                                false -> case :queue.out(q) do 
+                                            {{:value, msg}, q2} -> {[msg], q2}
+                                         end
+                            end
+            {:reply, {:ok, {:data, messages}}, %Session{state | outbound_queue: q}} 
+        end
     end
 
     def handle_call({:reply, pid, _multiple}, _from, %Session{response_pid: rpid} = state)
@@ -219,7 +224,7 @@ defmodule Sockjs.Session do
 
     def handle_call({:received, messages}, _from, %Session{ready_state: :open} = state) do
     	state = :lists.foldl(fn (msg, state1) ->
-                                 emit({:recv, :erlang.iolist_to_binary(msg)}, state1)
+                                 emit({:recv, msg}, state1)
                          end, state, messages)
    		{:reply, :ok, state}
    	end
@@ -232,6 +237,10 @@ defmodule Sockjs.Session do
     	{:stop, {:odd_request, request}, state}
     end
 
+    def handle_cast({:send, data}, %Session{ready_state: :closed} = state) do
+        {:noreply, state} 
+    end
+
     def handle_cast({:send, data}, %Session{outbound_queue: q,
                                             response_pid: rpid} = state) do
     	case rpid do
@@ -240,6 +249,10 @@ defmodule Sockjs.Session do
     	end
         IO.puts "adding data to queue"
     	{:noreply, %Session{state | outbound_queue: :queue.in(data, q)}}
+    end
+
+    def handle_cast({:close, _, _}, %Session{ready_state: :closed} = state) do
+        {:noreply, state} 
     end
 
     def handle_cast({:close, status, reason}, %Session{response_pid: rpid} = state) do

@@ -1,14 +1,15 @@
 defmodule Sockjs.Json do 
-	use Jazz
 
 	def encode(thing) do
-		IO.puts "#ENCODING#"
-		IO.inspect JSON.encode!(thing) 
+		#IO.puts "#ENCODING#"
+		#{:ok, enc} = JSON.encode(thing)
+		#enc
+		:mochijson2_fork.encode(thing) 
 	end
 
 	def decode(encoded) do
-		IO.puts "#DECODING#"
-		IO.inspect {:ok, JSON.decode!(encoded)}
+		#IO.puts "#DECODING#"
+		{:ok, JSON.decode!(encoded)}
 	end
 end
 
