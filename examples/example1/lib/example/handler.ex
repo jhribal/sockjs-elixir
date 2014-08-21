@@ -3,8 +3,7 @@ defmodule Example.Handler do
 
 	init do
 		IO.puts "!!!!!!!INIT HANDLER!!!!!!!"
-		reply([404, "Unauthorized access"])
-		close(404, "Unauthorized access")
+		reply([msg: "Hello world!"]);
 	end
 
 	handle do

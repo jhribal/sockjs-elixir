@@ -145,7 +145,7 @@ defmodule Sockjs.Session do
         end
     	case r do 
     		{:ok, userState1} -> %Session{state | state: userState1}
-    		{:ok } -> state
+    		{:ok} -> state
     	end
 
     end
@@ -223,9 +223,7 @@ defmodule Sockjs.Session do
 
 
     def handle_call({:received, messages}, _from, %Session{ready_state: :open} = state) do
-    	state = :lists.foldl(fn (msg, state1) ->
-                                 emit({:recv, msg}, state1)
-                         end, state, messages)
+        state = List.foldl(messages, state, fn (msg, state) -> emit({:recv, msg}, state) end)
    		{:reply, :ok, state}
    	end
 

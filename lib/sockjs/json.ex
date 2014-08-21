@@ -1,15 +1,13 @@
 defmodule Sockjs.Json do 
 
 	def encode(thing) do
-		#IO.puts "#ENCODING#"
-		#{:ok, enc} = JSON.encode(thing)
-		#enc
 		:mochijson2_fork.encode(thing) 
 	end
 
 	def decode(encoded) do
-		#IO.puts "#DECODING#"
-		{:ok, JSON.decode!(encoded)}
+		IO.inspect encoded
+		IO.inspect JSON.decode(encoded)
+		{:ok, :mochijson2_fork.decode(encoded)}
 	end
 end
 

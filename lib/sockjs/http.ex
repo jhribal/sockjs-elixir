@@ -26,6 +26,8 @@ defmodule Sockjs.Http do
 
 	def body(req) do 
 		{:ok, body, req} = :cowboy_req.body(req)
+        IO.puts "telo-decode"
+        IO.puts body
         {body, req}
     end
 

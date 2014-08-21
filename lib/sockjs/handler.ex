@@ -247,6 +247,7 @@ defmodule Sockjs.Handler do
     end
 
 
+  @doc false
 	defp default_logger(_service, req, _type) do
     	{longPath, req} = Http.path(req)
     	{method, req}   = Http.method(req)
@@ -254,18 +255,18 @@ defmodule Sockjs.Handler do
     	req
     end
 
+  @doc false
 	def extract_info(req) do
     	{peer, req}    = Http.peername(req)
     	{sock, req}    = Http.sockname(req)
     	{path, req}    = Http.path(req)
-    	{headers, req} = :lists.foldl(fn (h, {acc, r0}) ->
-                                      	case Http.header(h, r0) do
-                                              {:undefined, r1} -> {acc, r1}
-                                              {v, r1}         -> {[{h, v} | acc], r1}
-                                        end
-                                  	  end, {[], req},
-                                  	[:'referer', :'x-client-ip', :'x-forwarded-for',
-                                   	 :'x-cluster-client-ip', :'via', :'x-real-ip'])
+      {headers, req} = List.foldl([:'referer', :'x-client-ip', :'x-forwarded-for', :'x-cluster-client-ip', :'via', :'x-real-ip'],
+                                  {[], req}, fn (h, {acc, req}) -> 
+                                                case Http.header(h, req) do 
+                                                  {:undefined, r} -> {acc, r}
+                                                  {v, r} -> {[{h, v} | acc], r}
+                                                end
+                                              end)
     	{[{:peername, peer}, {:sockname, sock}, {:path, path}, {:headers, headers}], req}
     end
 
