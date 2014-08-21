@@ -1,4 +1,4 @@
-Sockjs
-======
+# Sock.js for elixir
 
-** TODO: Add description **
+## Project is under active development!
+
