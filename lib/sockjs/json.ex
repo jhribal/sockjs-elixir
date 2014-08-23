@@ -5,8 +5,6 @@ defmodule Sockjs.Json do
 	end
 
 	def decode(encoded) do
-		IO.inspect encoded
-		IO.inspect JSON.decode(encoded)
 		{:ok, :mochijson2_fork.decode(encoded)}
 	end
 end

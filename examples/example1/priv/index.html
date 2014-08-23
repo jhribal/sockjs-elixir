@@ -8,41 +8,28 @@
     <meta name="author" content="">
     <script type="text/javascript" src="jquery-2.1.1.min.js"></script>
     <script type="text/javascript" src="jquery.json.js"></script>
-    <script src="http://cdn.sockjs.org/sockjs-0.3.min.js"></script>
+    <script src="sockjs.js"></script>
     <script type="text/javascript">
-    $.ajax("http://localhost:4040", {
-      data: "ah\uD834\uDD1Eoj",
-      contentType: "text/plain",
-      type: 'POST'
-    });
-    /*
-      var table = {};
-      for(var i = 0; i < 0xFFFF; i++) {
-        table['' + i] = String.fromCharCode(i);  
-      }
-      console.log(table);
       $(function () {
-        $("#but").click(function () {
-          var val = $("#pokus").val(); 
-          val = val.replace(/\\u([0-9A-Fa-f]{4})/g, function (match, p1) {return table[parseInt(p1, 16)]});
-          console.log(val);
-        });
-        var sock = new SockJS('http://localhost:4040/rt', null, {'protocols_whitelist': ['xhr-polling']});
+
+        var sock = new SockJS('http://localhost:4040/rt', null, {'protocols_whitelist': ['jsonp-polling']});
         var b = $("body");
         sock.onopen = function () {
           b.append("<p>Connection opened...</p>");
         };
         sock.onmessage = function (msg) {
-          var msg = {msg: "hello\u0302"};
+          var resp = {msg: "hello\uD810\uDC00"};
           b.append("<b>MSG:</b> <code>" + $.toJSON(msg) + "</code>");
-          console.log($.toJSON(msg));
-          sock.send(JSON.stringify(msg));
+          console.log("posilam zpravu...");
+          console.log($.toJSON(resp));
+          sock.send(resp);
+          sock.send([1,2,{lol: "nub"}]);
+          sock.send("nazdar");
         }
         sock.onclose = function () {
           b.append("<p>Connection closed...</p>");
         }
       });
-*/
     </script>
     <title>Hello Sockjs-elixir!</title>
   </head>

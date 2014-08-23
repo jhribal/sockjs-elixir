@@ -8,8 +8,6 @@ defmodule Example do
 		:application.start(:cowlib)
 		:application.start(:cowboy)
 
-		IO.inspect :mochijson2_fork.decode(["{\"type\":\"message\",\"data\":{\"msg\":\"Hello world!\"}}"])
-
 		state = Sockjs.Handler.init_state("/rt", Example.Handler , :state, [])
 
 		dispatch = :cowboy_router.compile([

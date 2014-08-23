@@ -7,7 +7,8 @@ defmodule Example.Handler do
 	end
 
 	handle do
-		IO.puts "!!!!!!HANDLING REQUEST" 
+		IO.puts "!!!!!!HANDLING REQUEST"
+		IO.inspect data
 	end
 
 	terminate do

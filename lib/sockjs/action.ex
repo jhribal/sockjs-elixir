@@ -205,6 +205,7 @@ defmodule Sockjs.Action do
         	{:close, frame} -> frame = Util.encode_frame(frame)
                           		chunk_end(req0, frame, fmt)
         	{:ok, frame}    -> frame = Util.encode_frame(frame)
+                                # i think we could make this better?
                           	   frame = :erlang.iolist_to_binary(frame)
                           	   req2 = chunk(req0, frame, fmt)
                           	reply_loop0(req2, sessionId,
@@ -252,6 +253,9 @@ defmodule Sockjs.Action do
     # Yes, JSONed twice, there isn't a a better way, we must pass
     # a string back, and the script, will be evaled() by the
     # browser.
+
+      #really needed to call iolist_to_binary again? (called inside reply_loop)
+      # but only for regular data (not for close msg, heartbeat, session_in_use)
     	[callback, "(", Json.encode(:erlang.iolist_to_binary(body)), ");\r\n"]
   end
 

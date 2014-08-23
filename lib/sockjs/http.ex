@@ -26,8 +26,6 @@ defmodule Sockjs.Http do
 
 	def body(req) do 
 		{:ok, body, req} = :cowboy_req.body(req)
-        IO.puts "telo-decode"
-        IO.puts body
         {body, req}
     end
 
@@ -45,10 +43,10 @@ defmodule Sockjs.Http do
 
 	defp body_qs2(req) do
     	{:ok, bodyQS, req} = :cowboy_req.body_qs(req)
-    	case Keyword.get(bodyQS, "d", :undefined) do
+    	case List.keyfind(bodyQS, "d", 0, :undefined) do
         	:undefined ->
             	{"", req}
-        	v ->
+        	{_, v} ->
             	{v, req}
         end
     end
