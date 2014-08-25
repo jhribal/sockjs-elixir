@@ -28,6 +28,8 @@ defmodule Sockjs.Mixfile do
   defp deps do
     #[{:jazz, git: "https://github.com/meh/jazz"}, {:cowboy, git: "https://github.com/ninenines/cowboy"}]
     #[{:json,   "~> 0.3.0"}, {:cowboy, git: "https://github.com/ninenines/cowboy"}]
-    [{:ex_doc, "~> 0.5", only: :dev}, {:cowboy, git: "https://github.com/ninenines/cowboy"}]
+    [{:earmark, "~> 0.1", only: [:dev, :test]}, 
+     {:ex_doc, "~> 0.5", only: [:dev, :test]}, 
+     {:cowboy, git: "https://github.com/ninenines/cowboy"}]
   end
 end
